@@ -61,11 +61,15 @@ struct CreateUserData: Migration {
         database.schema("user_data")
             .id()
             .field("user_id", .uuid, .required, .references("users", "id", onDelete: .cascade))
+
             .field("coins", .int, .required, .sql(.default(400)))
-            .field("map_x", .int, .required, .sql(.default(0)))
-            .field("map_y", .int, .required, .sql(.default(0)))
-            .field("created_teas", .json, .required, .sql(.default("'[]'::json")))
+
+            .field("map_x", .float, .required, .sql(.default(0)))
+            .field("map_y", .float, .required, .sql(.default(0)))
+
+            .field("created_teas", .array(of: .json), .required, .sql(.default("'{}'::jsonb[]")))
             .field("achievements", .array(of: .string), .required, .sql(.default("'{}'")))
+
             .create()
     }
 
@@ -73,3 +77,4 @@ struct CreateUserData: Migration {
         database.schema("user_data").delete()
     }
 }
+
