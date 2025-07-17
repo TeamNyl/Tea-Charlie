@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:backend}",
+            "name": "Debug backend",
+            "program": "${workspaceFolder:backend}/.build/debug/backend",
+            "preLaunchTask": "swift: Build Debug backend"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:backend}",
+            "name": "Release backend",
+            "program": "${workspaceFolder:backend}/.build/release/backend",
+            "preLaunchTask": "swift: Build Release backend"
+        }
+    ]
+}
