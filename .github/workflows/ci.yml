@@ -33,8 +33,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
+
       - name: Convert repo owner to lowercase
-        run: echo "OWNER_LC=$(echo $OWNER_LC | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Build image
         uses: docker/build-push-action@v5
