@@ -22,10 +22,10 @@ final class UserData: Model, @unchecked Sendable {
     var coins: Int
 
     @Field(key: "map_x")
-    var mapX: Int
+    var mapX: Float
 
     @Field(key: "map_y")
-    var mapY: Int
+    var mapY: Float
 
     @Field(key: "created_teas")
     var createdTeas: [TeaEntry]
@@ -35,7 +35,7 @@ final class UserData: Model, @unchecked Sendable {
 
     init() {}
 
-    init(id: UUID? = nil, userID: UUID, coins: Int = 400, mapX: Int = 0, mapY: Int = 0, createdTeas: [TeaEntry] = [], achievements: [String] = []) {
+    init(id: UUID? = nil, userID: UUID, coins: Int = 400, mapX: Float = 0, mapY: Float = 0, createdTeas: [TeaEntry] = [], achievements: [String] = []) {
         self.id = id
         self.$user.id = userID
         self.coins = coins

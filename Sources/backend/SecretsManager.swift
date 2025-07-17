@@ -12,15 +12,20 @@ import SwiftDotenv
 import Foundation
 
 enum Tokens: String, CaseIterable {
+    // DB Configs
 	case dbDeleteToken      = "DB_DELETE_TOKEN"
 	case dbWriteToken       = "DB_WRITE_TOKEN"
 	case dbUsername         = "DB_USERNAME"
 	case dbPassword         = "DB_PASSWORD"
-	case dbHostName         = "DB_HOST_NAME"
+	case dbHostName         = "DB_HOSTNAME"
     case dbPort             = "DB_PORT"
     case dbName             = "DB_NAME"
 	case adminPanelToken    = "ADMIN_PANEL_TOKEN"
 	case maintenanceMode    = "MAINTENANCE_MODE"
+
+    // Application level configs
+    case maxLoginDevices    = "MAX_LOGIN_DEVICES"
+    case defaultCoins       = "DEFAULT_COINS"
 }
 
 class SecretsManager {

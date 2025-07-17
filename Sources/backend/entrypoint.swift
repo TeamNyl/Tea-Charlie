@@ -1,3 +1,13 @@
+// Created by Sean L. on Jul. 17.
+// Last Updated by Sean L. on Jul. 17.
+// 
+// Tea Charlie - Backend
+// Sources/backend/entrypoint.swift
+// 
+// -- ENTRY POINT --
+// 
+// Makabaka1880, 2025. All rights reserved.
+
 import Vapor
 import Logging
 import NIOCore

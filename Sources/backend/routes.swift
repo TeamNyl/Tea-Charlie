@@ -1,3 +1,11 @@
+// Created by Sean L. on Jul. 17.
+// Last Updated by Sean L. on Jul. 17.
+// 
+// Tea Charlie - Backend
+// Sources/backend/routes.swift
+// 
+// Makabaka1880, 2025. All rights reserved.
+
 import Fluent
 import Vapor
 
@@ -10,5 +18,6 @@ func routes(_ app: Application) throws {
         "Hello, world!"
     }
 
-    // try app.register(collection: TodoController())
+    try app.register(collection: UsersController())
+    try app.register(collection: UserInfoUpdateController())
 }
