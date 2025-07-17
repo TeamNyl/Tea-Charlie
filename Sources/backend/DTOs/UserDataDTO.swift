@@ -10,8 +10,8 @@ import Vapor
 
 struct UserDataDTO: Content {
     let coins: Int
-    let mapX: Int
-    let mapY: Int
+    let mapX: Float
+    let mapY: Float
     let createdTeas: [TeaEntryDTO]
     let achievements: [String]
     
