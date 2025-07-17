@@ -52,6 +52,9 @@ struct UsersController: RouteCollection {
         let maxDevices = Int(SecretsManager.get(.maxLoginDevices) ?? "3") ?? 3
 
         let activeTokens = try await Token.query(on: req.db)
+            .with(\.$user) {
+                $0.with(\.$userData)
+            }
             .filter(\.$user.$id == user.id!)
             .count()
 
@@ -72,7 +75,7 @@ struct UsersController: RouteCollection {
             throw Abort(.badRequest, reason: "Missing logout session key")
         }
 
-        guard let token = try await Token.query(on: req.db)
+        guard let token = try await Token.query(on: req.db).with(\.$user)
             .filter(\.$token == logoutRequest.id)
             .first() else {
             throw Abort(.notFound, reason: "Session not found")
@@ -104,7 +107,9 @@ struct UsersController: RouteCollection {
         )
         
         // Check for repetition
-        guard try await User.query(on: req.db).filter(\.$email == user.email).count() == 0 else {
+        guard try await User.query(on: req.db)
+            .with(\.$userData)
+            .filter(\.$email == user.email).count() == 0 else {
             throw Abort(.conflict, reason: "Account email used")
         }
 

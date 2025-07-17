@@ -20,7 +20,7 @@ struct UserCoin: Content {
 
 struct UserInfoUpdateController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
-        let infoUpdateController = routes.grouped("/user")
+        let infoUpdateController = routes.grouped("user")
         infoUpdateController.post("move", use: setPosition)
         infoUpdateController.get("position", use: getPosition)
         infoUpdateController.post("coins", use: setCoins)
@@ -46,7 +46,19 @@ struct UserInfoUpdateController: RouteCollection {
         user.userData!.mapX = pos.x
         user.userData!.mapY = pos.y
 
-        try await user.save(on: req.db)
+        if let userData = user.userData {
+            // Update existing userData
+            userData.mapX = pos.x
+            userData.mapY = pos.y
+            try await userData.save(on: req.db)
+        } else {
+            // Create new UserData linked to this user
+            let newUserData = UserData(userID: try user.requireID())
+            newUserData.mapX = pos.x
+            newUserData.mapY = pos.y
+            try await newUserData.save(on: req.db)
+        }
+
         return pos
     }
 
@@ -59,7 +71,7 @@ struct UserInfoUpdateController: RouteCollection {
             throw Abort(.forbidden, reason: "Invalid Session key")
         }
         let x = user.userData!.mapX
-        let y = user.userData!.mapY 
+        let y = user.userData!.mapY
 
         return UserPosition(x: x, y: y)
     }
@@ -74,8 +86,14 @@ struct UserInfoUpdateController: RouteCollection {
         guard let user = try await UserCredentialsManager.verifySessionToken(token, db: req.db) else {
             throw Abort(.forbidden, reason: "Invalid Session key")
         }
-
-        user.userData!.coins = coins.coins
+        if let userData = user.userData {
+            userData.coins = coins.coins
+            try await userData.save(on: req.db)
+        } else {
+            let newUserData = UserData(userID: try user.requireID())
+            newUserData.coins = coins.coins
+            try await newUserData.save(on: req.db)
+        }
 
         try await user.save(on: req.db)
         return coins
