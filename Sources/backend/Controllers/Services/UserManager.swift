@@ -32,8 +32,12 @@ class UserCredentialsManager {
     }
 
     static func verifySessionToken(_ id: String, db: any Database) async throws -> User? {
+        // Check for ttl
+        let ttlTime = Double(SecretsManager.get(.loginTokenTTL)!)!
+        let ttl = Date().addingTimeInterval(-ttlTime * 24 * 60 * 60)
         // Fetch the token with its user
         guard let token = try await Token.query(on: db)
+            .filter(\.$createdAt < ttl)
             .filter(\.$token == id)
             .with(\.$user)
             .first()

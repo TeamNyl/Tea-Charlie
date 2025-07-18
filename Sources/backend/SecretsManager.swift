@@ -22,6 +22,7 @@ enum Tokens: String, CaseIterable {
     case dbName             = "DB_NAME"
 	case adminPanelToken    = "ADMIN_PANEL_TOKEN"
 	case maintenanceMode    = "MAINTENANCE_MODE"
+	case loginTokenTTL      = "LOGIN_TOKEN_TTL"
 
     // Application level configs
     case maxLoginDevices    = "MAX_LOGIN_DEVICES"

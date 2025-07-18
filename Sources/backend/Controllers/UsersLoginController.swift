@@ -53,10 +53,13 @@ struct UsersController: RouteCollection {
 
         let maxDevices = Int(SecretsManager.get(.maxLoginDevices) ?? "3") ?? 3
 
+        let ttlTime = Double(SecretsManager.get(.loginTokenTTL)!)!
+        let ttl = Date().addingTimeInterval(-ttlTime * 24 * 60 * 60)
         let activeTokens = try await Token.query(on: req.db)
             .with(\.$user) {
                 $0.with(\.$userData)
             }
+            .filter(\.$createdAt < ttl)
             .filter(\.$user.$id == user.id!)
             .count()
 
