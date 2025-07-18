@@ -60,9 +60,11 @@ struct UsersController: RouteCollection {
             .with(\.$user) {
                 $0.with(\.$userData)
             }
-            .filter(\.$createdAt < ttl)
+            .filter(\.$createdAt > ttl)
             .filter(\.$user.$id == user.id!)
             .count()
+
+        print(activeTokens)
 
         guard activeTokens < maxDevices else {
             throw Abort(.tooManyRequests, reason: "Maximum number of logged-in devices reached.")
