@@ -274,3 +274,70 @@ HTTP/1.1 204 No Content
 Content-Type: application/json
 ```
 
+---
+
+## GET `/auth/validate` — Verify Session Token
+
+Validate that the provided bearer token corresponds to an active login session.
+
+### Request
+
+**Headers**
+
+| Name            | Value                         | Required | Description                      |
+| --------------- | ----------------------------- | -------- | -------------------------------- |
+| `Authorization` | `Bearer <session‑token‑uuid>` | Yes      | The user’s session token (UUID). |
+
+*No body.*
+
+### Success Response
+
+**Status:** `200 OK`
+*No response body.*
+
+### Error Responses
+
+| Status |         Code | Description                                  |
+| -----: | -----------: | -------------------------------------------- |
+|  `401` | Unauthorized | Missing or malformed `Authorization` header. |
+|  `403` |    Forbidden | Token provided is invalid or expired.        |
+
+**401 Example**
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+    "error": true,
+    "reason": "Session key not provided"
+}
+```
+
+**403 Example**
+
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{
+    "error": true,
+    "reason": "Forbidden"
+}
+```
+
+### Example
+
+**Request**
+
+```http
+GET /auth/validate HTTP/1.1
+Host: api.tea-charlie.example.com
+Authorization: Bearer cf156b92-b9e0-4cbf-9d62-2f1b806cfefe
+```
+
+**Response**
+
+```http
+HTTP/1.1 200 OK
+```

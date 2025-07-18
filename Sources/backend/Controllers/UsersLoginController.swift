@@ -34,6 +34,7 @@ struct UsersController: RouteCollection {
         userRoutes.post("login", use: login)
         userRoutes.post("register", use: register)
         userRoutes.post("logout", use: logout)
+        userRoutes.get("validate-session", use: validate)
     }
 
     func login(req: Request) async throws -> Response {
@@ -139,5 +140,17 @@ struct UsersController: RouteCollection {
         let res = Response(status: .created)
         try res.content.encode(UUIDReturnWrapping(id: userID.uuidString))
         return res
+    }
+
+    func validate(req: Request) async throws -> Response {
+        guard let token = req.headers.bearerAuthorization?.token else {
+            throw Abort(.unauthorized, reason: "Session key not provided")
+        }
+
+        guard let _ = try await UserCredentialsManager.verifySessionToken(token, db: req.db) else {
+            throw Abort(.forbidden)
+        }
+
+        return Response(status: .ok);
     }
 }
