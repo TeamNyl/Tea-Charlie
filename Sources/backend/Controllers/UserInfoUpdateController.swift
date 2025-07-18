@@ -25,7 +25,6 @@ struct UserInfoUpdateController: RouteCollection {
         infoUpdateController.get("position", use: getPosition)
         infoUpdateController.put("coins", use: setCoins)
         infoUpdateController.get("coins", use: getCoins)
-
     }
 
     func setPosition(req: Request) async throws -> Response {
