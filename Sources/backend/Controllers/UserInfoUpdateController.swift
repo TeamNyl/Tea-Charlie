@@ -21,18 +21,18 @@ struct UserCoin: Content {
 struct UserInfoUpdateController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let infoUpdateController = routes.grouped("user")
-        infoUpdateController.post("move", use: setPosition)
+        infoUpdateController.put("move", use: setPosition)
         infoUpdateController.get("position", use: getPosition)
-        infoUpdateController.post("coins", use: setCoins)
+        infoUpdateController.put("coins", use: setCoins)
         infoUpdateController.get("coins", use: getCoins)
 
     }
 
-    func setPosition(req: Request) async throws -> UserPosition {
+    func setPosition(req: Request) async throws -> Response {
         let pos = try req.content.decode(UserPosition.self)
 
         guard let token = req.headers.bearerAuthorization?.token else {
-            throw Abort(.forbidden, reason: "Session key not provided")
+            throw Abort(.unauthorized, reason: "Session key not provided")
         }
 
         guard let user = try await UserCredentialsManager.verifySessionToken(token, db: req.db) else {
@@ -42,9 +42,6 @@ struct UserInfoUpdateController: RouteCollection {
         if let _ = user.userData {} else {
             user.userData = .init()
         }
-
-        user.userData!.mapX = pos.x
-        user.userData!.mapY = pos.y
 
         if let userData = user.userData {
             // Update existing userData
@@ -58,13 +55,15 @@ struct UserInfoUpdateController: RouteCollection {
             newUserData.mapY = pos.y
             try await newUserData.save(on: req.db)
         }
-
-        return pos
+        
+        let res = Response(status: .ok)
+        try res.content.encode(pos)
+        return res
     }
 
-    func getPosition(req: Request) async throws -> UserPosition {
+    func getPosition(req: Request) async throws -> Response {
         guard let token = req.headers.bearerAuthorization?.token else {
-            throw Abort(.forbidden, reason: "Session key not provided")
+            throw Abort(.unauthorized, reason: "Session key not provided")
         }
 
         guard let user = try await UserCredentialsManager.verifySessionToken(token, db: req.db) else {
@@ -73,7 +72,9 @@ struct UserInfoUpdateController: RouteCollection {
         let x = user.userData!.mapX
         let y = user.userData!.mapY
 
-        return UserPosition(x: x, y: y)
+        let res = Response(status: .ok)
+        try res.content.encode(UserPosition(x: x, y: y))
+        return res
     }
 
     func setCoins(req: Request) async throws -> UserCoin {
