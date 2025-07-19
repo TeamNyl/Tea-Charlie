@@ -26,6 +26,15 @@ public func configure(_ app: Application) async throws {
 
     app.migrations.add(CreateUsers())
     
+
+    let corsConfig = CORSMiddleware.Configuration(
+        allowedOrigin: .all,
+        allowedMethods: [.GET, .POST, .DELETE, .OPTIONS, .PUT],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent]
+    )
+
+    // MARK: Middlewares
+    app.middleware.use(CORSMiddleware(configuration: corsConfig))
     // register routes
     try routes(app)
 }
