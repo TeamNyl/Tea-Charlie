@@ -13,7 +13,8 @@ struct UserDataDTO: Content {
     let mapX: Float
     let mapY: Float
     let createdTeas: [TeaEntryDTO]
-    let achievements: [String]
+    let achievements: [Achievement]
+    let inventory: [InventoryItem]
     
     init(from userData: UserData) {
         self.coins = userData.coins
@@ -21,5 +22,6 @@ struct UserDataDTO: Content {
         self.mapY = userData.mapY
         self.createdTeas = userData.createdTeas.map { TeaEntryDTO(from: $0) }
         self.achievements = userData.achievements
+        self.inventory = userData.inventory
     }
 }

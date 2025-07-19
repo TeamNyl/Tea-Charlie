@@ -68,7 +68,7 @@ struct CreateUserData: Migration {
             .field("map_y", .float, .required, .sql(.default(0)))
 
             .field("created_teas", .array(of: .json), .required, .sql(.default("'{}'::jsonb[]")))
-            .field("achievements", .array(of: .string), .required, .sql(.default("'{}'")))
+            .field("achievements", .array(of: .json), .required, .sql(.default("'{}'::jsonb[]")))
 
             .create()
     }

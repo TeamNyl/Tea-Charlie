@@ -31,11 +31,14 @@ final class UserData: Model, @unchecked Sendable {
     var createdTeas: [TeaEntry]
 
     @Field(key: "achievements")
-    var achievements: [String]
+    var achievements: [Achievement]
+
+    @Field(key: "inventory")
+    var inventory: [InventoryItem]
 
     init() {}
 
-    init(id: UUID? = nil, userID: UUID, coins: Int = 400, mapX: Float = 0, mapY: Float = 0, createdTeas: [TeaEntry] = [], achievements: [String] = []) {
+    init(id: UUID? = nil, userID: UUID, coins: Int = 400, mapX: Float = 0, mapY: Float = 0, createdTeas: [TeaEntry] = [], achievements: [Achievement] = [], inventory: [InventoryItem] = []) {
         self.id = id
         self.$user.id = userID
         self.coins = coins
@@ -43,5 +46,6 @@ final class UserData: Model, @unchecked Sendable {
         self.mapY = mapY
         self.createdTeas = createdTeas
         self.achievements = achievements
+        self.inventory = inventory
     }
 }
