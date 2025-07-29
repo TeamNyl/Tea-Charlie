@@ -25,7 +25,6 @@ public func configure(_ app: Application) async throws {
     ), as: .psql)
 
     app.migrations.add(CreateUsers())
-    
 
     let corsConfig = CORSMiddleware.Configuration(
         allowedOrigin: .all,
