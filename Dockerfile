@@ -3,40 +3,31 @@
 # ================================
 FROM swift:6.0-noble AS build
 
-# Install dependencies
 RUN apt-get update -q && apt-get upgrade -y -q \
  && apt-get install -y -q libjemalloc-dev jq
 
 WORKDIR /build
 
-# Copy Swift package manifests and resolve dependencies
 COPY ./Package.* ./
 RUN swift package resolve \
     $([ -f ./Package.resolved ] && echo "--force-resolved-versions" || true)
 
-# Copy rest of source code
-COPY . .
+COPY . ./
 
-# Build optimized binary with jemalloc and static stdlib
 RUN swift build -c release \
     --product backend \
     --static-swift-stdlib \
     -Xlinker -ljemalloc
 
-# Prepare staging area
 WORKDIR /staging
 
-# Copy main executable
 RUN cp "$(swift build --package-path /build -c release --show-bin-path)/backend" ./backend
 
-# Copy any SPM-generated resource bundles
 RUN find -L "$(swift build --package-path /build -c release --show-bin-path)/" -regex '.*\.resources$' -exec cp -Ra {} ./ \;
 
-# Copy optional Public and Resources directories
 RUN [ -d /build/Public ] && { cp -r /build/Public ./ && chmod -R a-w ./Public; } || true
 RUN [ -d /build/Resources ] && { cp -r /build/Resources ./ && chmod -R a-w ./Resources; } || true
 
-# Extract Swift runtime dynamic libraries needed at runtime
 RUN mkdir -p swift-lib \
  && swift -print-target-info \
     | jq -r '.paths.runtimeLibraryPaths[]' \
@@ -45,12 +36,15 @@ RUN mkdir -p swift-lib \
     | xargs -I {} cp -v {} swift-lib/ \
  && cp -v /usr/lib/x86_64-linux-gnu/libjemalloc.so.* swift-lib/ || true
 
- # ================================
+# ================================
 # Runtime image (Alpine)
 # ================================
 FROM alpine:3.20
 
-# Install runtime dependencies
+# Create vapor user and group BEFORE any `USER` instructions
+RUN addgroup -g 1000 -S vapor && adduser -u 1000 -S vapor -G vapor
+
+# Install required runtime dependencies
 RUN apk add --no-cache \
     libgcc \
     libstdc++ \
@@ -60,18 +54,17 @@ RUN apk add --no-cache \
     tzdata \
     curl
 
-# Create non-root user
-RUN adduser -S -D -H -h /app vapor
-
 WORKDIR /app
 
-# Copy app binary and libs from builder
-COPY --from=build --chown=vapor:vapor /staging /app
+# Copy app from builder with proper ownership
+COPY --from=build /staging /app
+RUN chown -R vapor:vapor /app
 
-# Set Swift runtime environment
+# Set runtime env vars
 ENV SWIFT_BACKTRACE=enable=no,sanitize=yes,threads=all,images=all,interactive=no
 ENV LD_LIBRARY_PATH=/app/swift-lib
 
+# Switch to vapor user
 USER vapor:vapor
 
 EXPOSE 8080
