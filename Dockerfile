@@ -1,89 +1,81 @@
 # ================================
-# Build image
+# Build image (Ubuntu-based with Swift)
 # ================================
 FROM swift:6.0-noble AS build
 
-# Install OS updates
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && apt-get install -y libjemalloc-dev
+# Install dependencies
+RUN apt-get update -q && apt-get upgrade -y -q \
+ && apt-get install -y -q libjemalloc-dev jq
 
-# Set up a build area
 WORKDIR /build
 
-# First just resolve dependencies.
-# This creates a cached layer that can be reused
-# as long as your Package.swift/Package.resolved
-# files do not change.
+# Copy Swift package manifests and resolve dependencies
 COPY ./Package.* ./
 RUN swift package resolve \
-        $([ -f ./Package.resolved ] && echo "--force-resolved-versions" || true)
+    $([ -f ./Package.resolved ] && echo "--force-resolved-versions" || true)
 
-# Copy entire repo into container
+# Copy rest of source code
 COPY . .
 
-# Build the application, with optimizations, with static linking, and using jemalloc
-# N.B.: The static version of jemalloc is incompatible with the static Swift runtime.
+# Build optimized binary with jemalloc and static stdlib
 RUN swift build -c release \
-        --product backend \
-        --static-swift-stdlib \
-        -Xlinker -ljemalloc
+    --product backend \
+    --static-swift-stdlib \
+    -Xlinker -ljemalloc
 
-# Switch to the staging area
+# Prepare staging area
 WORKDIR /staging
 
-# Copy main executable to staging area
-RUN cp "$(swift build --package-path /build -c release --show-bin-path)/backend" ./
+# Copy main executable
+RUN cp "$(swift build --package-path /build -c release --show-bin-path)/backend" ./backend
 
-# Copy static swift backtracer binary to staging area
-RUN cp "/usr/libexec/swift/linux/swift-backtrace-static" ./
-
-# Copy resources bundled by SPM to staging area
+# Copy any SPM-generated resource bundles
 RUN find -L "$(swift build --package-path /build -c release --show-bin-path)/" -regex '.*\.resources$' -exec cp -Ra {} ./ \;
 
-# Copy any resources from the public directory and views directory if the directories exist
-# Ensure that by default, neither the directory nor any of its contents are writable.
-RUN [ -d /build/Public ] && { mv /build/Public ./Public && chmod -R a-w ./Public; } || true
-RUN [ -d /build/Resources ] && { mv /build/Resources ./Resources && chmod -R a-w ./Resources; } || true
+# Copy optional Public and Resources directories
+RUN [ -d /build/Public ] && { cp -r /build/Public ./ && chmod -R a-w ./Public; } || true
+RUN [ -d /build/Resources ] && { cp -r /build/Resources ./ && chmod -R a-w ./Resources; } || true
 
+# Extract Swift runtime dynamic libraries needed at runtime
+RUN mkdir -p swift-lib \
+ && swift -print-target-info \
+    | jq -r '.paths.runtimeLibraryPaths[]' \
+    | xargs -I {} find {} -type f -name '*.so' \
+    | grep -E '(libswiftCore|libFoundation|libdispatch|libicu|libBlocksRuntime|libswift_|libicuuc|libicudata|libicui18n)' \
+    | xargs -I {} cp -v {} swift-lib/ \
+ && cp -v /usr/lib/x86_64-linux-gnu/libjemalloc.so.* swift-lib/ || true
+
+ # ================================
+# Runtime image (Alpine)
 # ================================
-# Run image
-# ================================
-FROM ubuntu:noble
+FROM alpine:3.20
 
-# Make sure all system packages are up to date, and install only essential packages.
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && apt-get -q install -y \
-      libjemalloc2 \
-      ca-certificates \
-      tzdata \
-# If your app or its dependencies import FoundationNetworking, also install `libcurl4`.
-      # libcurl4 \
-# If your app or its dependencies import FoundationXML, also install `libxml2`.
-      # libxml2 \
-    && rm -r /var/lib/apt/lists/*
+# Install runtime dependencies
+RUN apk add --no-cache \
+    libgcc \
+    libstdc++ \
+    libexecinfo \
+    jemalloc \
+    ca-certificates \
+    icu-libs \
+    tzdata \
+    curl
 
-# Create a vapor user and group with /app as its home directory
-RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
+# Create non-root user
+RUN adduser -S -D -H -h /app vapor
 
-# Switch to the new home directory
 WORKDIR /app
 
-# Copy built executable and any staged resources from builder
+# Copy app binary and libs from builder
 COPY --from=build --chown=vapor:vapor /staging /app
 
-# Provide configuration needed by the built-in crash reporter and some sensible default behaviors.
+# Set Swift runtime environment
 ENV SWIFT_BACKTRACE=enable=no,sanitize=yes,threads=all,images=all,interactive=no
+ENV LD_LIBRARY_PATH=/app/swift-lib
 
-# Ensure all further commands run as the vapor user
 USER vapor:vapor
 
-# Let Docker bind to port 8080
 EXPOSE 8080
 
-# Start the Vapor service when the image is run, default to listening on 8080 in production environment
 ENTRYPOINT ["./backend"]
 CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
