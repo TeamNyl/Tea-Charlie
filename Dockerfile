@@ -54,7 +54,6 @@ FROM alpine:3.20
 RUN apk add --no-cache \
     libgcc \
     libstdc++ \
-    libexecinfo \
     jemalloc \
     ca-certificates \
     icu-libs \
