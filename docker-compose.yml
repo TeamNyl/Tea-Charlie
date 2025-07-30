@@ -8,7 +8,8 @@ services:
     ports:
       - "8080:8080"
     command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
-
+    networks:
+      - teacharlie-net
   migrate:
     image: ghcr.io/teamnyl/teacharlie:latest
     env_file:
@@ -18,7 +19,8 @@ services:
     command: ["migrate", "--yes"]
     deploy:
       replicas: 0
-
+    networks:
+      - teacharlie-net
   revert:
     image: ghcr.io/teamnyl/teacharlie:latest
     env_file:
@@ -28,7 +30,8 @@ services:
     command: ["migrate", "--revert", "--yes"]
     deploy:
       replicas: 0
-
+    networks:
+      - teacharlie-net
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -43,3 +46,8 @@ services:
       - stack.env
     ports:
       - "5432:5432"
+    networks:
+      - teacharlie-net
+networks:
+  teacharlie-net:
+    driver: bridge
