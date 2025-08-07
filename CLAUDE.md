@@ -12,19 +12,22 @@ Tea Charlie is a Swift Vapor web application backend that provides a RESTful API
 
 - **Entry Point**: `Sources/backend/entrypoint.swift` - Main application entry point using async/await
 - **Configuration**: `Sources/backend/configure.swift` - Database setup, middleware, and application configuration
-- **Routes**: `Sources/backend/routes.swift` - API route definitions and controller registration
+- **Routes**: `Sources/backend/routes.swift` - API route definitions and controller registration (UsersController, UserInfoUpdateController, StatisticsRoutes)
 - **Secrets Management**: `Sources/backend/SecretsManager.swift` - Environment variable and secrets handling
 
 ### Data Layer
 
 - **Models**: Core data models (User, Auth, TeaModel, Achievements, Data)
-- **DTOs**: Data transfer objects for API requests/responses
+- **DTOs**: Data transfer objects for API requests/responses (UserDTO, TeaDTO, UserDataDTO, TokenDTO)
+- **Services**: UserManager and Hasher utilities in `Sources/backend/Controllers/Services/`
 - **Migrations**: Database schema definitions in `Sources/backend/Migrations/SetupDB.swift`
 
 ### Controllers
 
 - **UsersLoginController**: Authentication endpoints (/auth/register, /auth/login, /auth/logout, /auth/validate)
-- **UserInfoUpdateController**: User data management
+- **UserInfoUpdateController**: User data management with WebSocket support for real-time position updates
+  - REST endpoints: PUT /user/move, GET /user/position, PUT /user/coins, GET /user/coins
+  - WebSocket endpoint: /user/position/ws for real-time position tracking
 - **StatisticsRoutes**: Application statistics and metrics
 
 ### Database Schema
@@ -104,14 +107,28 @@ Required environment variables (see `.env` for development):
 - **CORS**: Configured for cross-origin requests
 - **Database**: PostgreSQL with Fluent ORM and proper migrations
 - **Tea Game Logic**: Support for tea creation steps, achievements, and user progression
+- **WebSocket Integration**: Real-time position tracking with /user/position/ws endpoint
 - **Security**: Password hashing, token-based authentication, environment-based secrets
 
 ## API Documentation
 
-Detailed API documentation is available in the `docs/` directory:
-- `docs/user-auth.md` - Authentication endpoints
-- `docs/user-info.md` - User information endpoints
-- `docs/user-update.md` - User data update endpoints
+#### Authentication Routes (/auth/)
+- POST /auth/register - User registration
+- POST /auth/login - User authentication
+- POST /auth/logout - Session termination
+- POST /auth/validate - Token validation
+
+#### User Data Routes (/user/)
+- PUT /user/move - Update user position
+- GET /user/position - Get user position
+- PUT /user/coins - Update user coins
+- GET /user/coins - Get user coins
+- WebSocket /user/position/ws - Real-time position updates
+
+#### Statistics Routes
+- Various statistics and metrics endpoints
+
+Detailed API documentation is available in the `docs/` directory (if present)
 
 ## Dependencies
 
