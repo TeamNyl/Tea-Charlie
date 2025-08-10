@@ -31,7 +31,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateUserStatus())
 
     let corsConfig = CORSMiddleware.Configuration(
-        allowedOrigin: .any(["http://localhost:5173"]),
+        allowedOrigin: .any(["http://localhost:5173", "https://user.teacharlie.com"]),
         allowedMethods: [.GET, .POST, .DELETE, .OPTIONS, .PUT],
         allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .cookie, .accessControlAllowOrigin, .accessControlAllowCredentials, .accessControlAllowHeaders, .accessControlAllowMethods],
         allowCredentials: true
