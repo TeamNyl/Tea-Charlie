@@ -10,7 +10,7 @@
 import Vapor
 import Fluent
 
-final class Room: Model, Content {
+final class Room: Model, Content, @unchecked Sendable {
     static let schema = "rooms"
 
     // Fields
@@ -27,12 +27,12 @@ final class Room: Model, Content {
     var createdAt: Date
 
     @Enum(key: "room_status")
-    var roomStatus: UserStatus
+    var roomStatus: RoomStatus
 
     // Initializer
     init() {}
 
-    init(id: UUID? = nil, name: String, creatorId: UUID, createdAt: Date = Date(), roomStatus: UserStatus = .ok) {
+    init(id: UUID? = nil, name: String, creatorId: UUID, createdAt: Date = Date(), roomStatus: RoomStatus = .active) {
         self.id = id
         self.name = name
         self.$creator.id = creatorId

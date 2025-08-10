@@ -10,7 +10,7 @@ import Fluent
 import Vapor
 
 struct UUIDReturnWrapping: Content {
-    var id: String
+    var id: UUID
 }
 
 struct UserLoginRequest: Content {
@@ -29,6 +29,7 @@ struct UserLoginResponse: Content {
 }
 
 struct UsersController: RouteCollection {
+    
     func boot(routes: any RoutesBuilder) {
         let userRoutes = routes.grouped("auth")
         userRoutes.post("login", use: login)
@@ -37,13 +38,32 @@ struct UsersController: RouteCollection {
         userRoutes.get("validate-session", use: validate)
     }
 
-    func login(req: Request) async throws -> Response {
-        // Decode request body directly to UserLoginRequest
-        guard let loginRequest = try? req.content.decode(UserLoginRequest.self) else {
+    private func decodeContent<T: Content>(from req: Request) async throws -> T {
+        guard let content = try? req.content.decode(T.self) else {
             throw Abort(.badRequest, reason: "Malformed request body")
         }
+        return content
+    }
+
+    private func validateSessionToken(req: Request) async throws -> UUID {
+        guard let sessionKeyStr = req.cookies["sessionToken"],
+              let sessionKey = UUID(sessionKeyStr.string) else {
+            throw Abort(.unauthorized, reason: "Session token not provided")
+        }
+        return sessionKey
+    }
+
+    private func getMaxDevices() -> Int {
+        return Int(SecretsManager.get(.maxLoginDevices) ?? "3") ?? 3
+    }
+
+    private func getTokenTTL() -> Double {
+        return Double(SecretsManager.get(.loginTokenTTL)!)!
+    }
+
+    private func login(req: Request) async throws -> Response {
+        let loginRequest = try await decodeContent(from: req) as UserLoginRequest
         
-        // Authenticate user with your UserManager
         guard let user = try await UserCredentialsManager.authenticateUser(
             identifier: loginRequest.identifier,
             password: loginRequest.password,
@@ -52,75 +72,66 @@ struct UsersController: RouteCollection {
             throw Abort(.forbidden, reason: "Invalid credentials")
         }
 
-        let maxDevices = Int(SecretsManager.get(.maxLoginDevices) ?? "3") ?? 3
-
-        let ttlTime = Double(SecretsManager.get(.loginTokenTTL)!)!
+        let maxDevices = getMaxDevices()
+        let ttlTime = getTokenTTL()
         let ttl = Date().addingTimeInterval(-ttlTime * 24 * 60 * 60)
-        let activeTokens = try await Token.query(on: req.db)
-            .with(\.$user) {
-                $0.with(\.$userData)
-            }
+        
+        let activeTokens = try await LoginSession.query(on: req.db)
             .filter(\.$createdAt > ttl)
             .filter(\.$user.$id == user.id!)
             .count()
-
+        
         print(activeTokens)
 
         guard activeTokens < maxDevices else {
             throw Abort(.tooManyRequests, reason: "Maximum number of logged-in devices reached.")
         }
 
-        let tokenString = UUID().uuidString
-        let token = Token(userID: try user.requireID(), token: tokenString)
+        let tokenString = UUID()
+        let token = LoginSession(userId: try user.requireID(), sessionKey: tokenString)
         try await token.save(on: req.db)
 
+        let cookie = HTTPCookies.Value(
+            string: token.sessionKey.uuidString,
+            expires: Date().addingTimeInterval(ttlTime * 24 * 60 * 60),
+            maxAge: Int(ttlTime * 24 * 60 * 60),
+            path: "/",
+            isSecure: true,
+            isHTTPOnly: true,
+            sameSite: .lax
+        )
+
         let res = Response(status: .ok)
-        try res.content.encode(UUIDReturnWrapping(id: token.token))
+        res.cookies["sessionToken"] = cookie
         return res
     }
 
-    func logout(req: Request) async throws -> Response {
+    private func logout(req: Request) async throws -> Response {
+        let logoutRequest = try await validateSessionToken(req: req);
 
-        guard let logoutRequest = try? req.content.decode(UUIDReturnWrapping.self) else {
-            throw Abort(.badRequest, reason: "Malformed request body")
-        }
-        guard !logoutRequest.id.isEmpty else {
-            throw Abort(.badRequest, reason: "Missing logout session key")
-        }
-
-        guard let token = try await Token.query(on: req.db).with(\.$user)
-            .filter(\.$token == logoutRequest.id)
+        guard let token = try await LoginSession.query(on: req.db)
+            .filter(\.$sessionKey == logoutRequest)
             .first() else {
             throw Abort(.notFound, reason: "Session not found")
         }
 
         try await token.delete(on: req.db)
-
-        let res = Response(status: .noContent)
-        return res
+        return Response(status: .noContent)
     }
 
-    func register(req: Request) async throws -> Response {
-        guard let contentType = req.headers["Content-Type"].first,
-            contentType.contains("application/json"),
-            let registerRequest = try? req.content.decode(RegisterRequest.self) else {
-            throw Abort(.badRequest, reason: "Content should be JSON")
-        }
+    private func register(req: Request) async throws -> Response {
+        let registerRequest = try await decodeContent(from: req) as RegisterRequest
 
-        
-        guard !registerRequest.email.isEmpty,
-            !registerRequest.password.isEmpty,
-            !registerRequest.username.isEmpty else {
+        guard !registerRequest.email.isEmpty, !registerRequest.password.isEmpty, !registerRequest.username.isEmpty else {
             throw Abort(.badRequest, reason: "Fields cannot be empty")
         }
 
         let user = User(
             email: registerRequest.email,
-            passHash: try EncryptionManager.hashPassword(registerRequest.password), 
-            username: registerRequest.username
+            username: registerRequest.username,
+            passHash: try EncryptionManager.hashPassword(registerRequest.password)
         )
         
-        // Check for repetition
         guard try await User.query(on: req.db)
             .with(\.$userData)
             .filter(\.$email == user.email).count() == 0 else {
@@ -131,28 +142,23 @@ struct UsersController: RouteCollection {
         let userID = try user.requireID()
 
         let userData = UserData(
-            userID: userID,
-            coins: Int(SecretsManager.get(.defaultCoins)!)!,
-            mapX: 0.0,
-            mapY: 0.0,
-            createdTeas: [],
+            userId: userID,
             achievements: []
         )
         try await userData.save(on: req.db)
+        
         let res = Response(status: .created)
-        try res.content.encode(UUIDReturnWrapping(id: userID.uuidString))
+        try res.content.encode(UUIDReturnWrapping(id: userID))
         return res
     }
 
-    func validate(req: Request) async throws -> Response {
-        guard let token = req.headers.bearerAuthorization?.token else {
-            throw Abort(.unauthorized, reason: "Session key not provided")
-        }
+    private func validate(req: Request) async throws -> Response {
+        let sessionKey = try await validateSessionToken(req: req)
 
-        guard let _ = try await UserCredentialsManager.verifySessionToken(token, db: req.db) else {
+        guard let _ = try await UserCredentialsManager.verifySessionToken(sessionKey.uuidString, db: req.db) else {
             throw Abort(.forbidden)
         }
 
-        return Response(status: .ok);
+        return Response(status: .ok)
     }
 }

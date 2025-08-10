@@ -10,16 +10,20 @@ import Vapor
 import Fluent
 
 struct CreateUserData: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("user_data")
             .id()
             .field("user_id", .uuid, .required)
-            .field("achievements", .array(of: .json), .required, .default([]))
+            .field("achievements", .array(of: .json), .required, .sql(.default("'{}'::jsonb[]")))
+            .field("coins", .int, .required, .sql(.default(400)))
+            .field("map_x", .float, .required, .sql(.default(0)))
+            .field("map_y", .float, .required, .sql(.default(0)))
+            .field("created_teas", .array(of: .json), .required, .sql(.default("'{}'::jsonb[]")))
             .foreignKey("user_id", references: "users", "id", onDelete: .cascade)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("user_data").delete()
     }
 }

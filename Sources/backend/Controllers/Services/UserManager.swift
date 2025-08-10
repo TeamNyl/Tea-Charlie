@@ -32,23 +32,28 @@ class UserCredentialsManager {
     }
 
     static func verifySessionToken(_ id: String, db: any Database) async throws -> User? {
+        // Cast id to UUID
+        guard let sessionUUID = UUID(uuidString: id) else {
+            return nil
+        }
+        
         // Check for ttl
         let ttlTime = Double(SecretsManager.get(.loginTokenTTL)!)!
         let ttl = Date().addingTimeInterval(ttlTime * 24 * 60 * 60)
         print(ttl)
         // Fetch the token with its user
-        guard let token = try await Token.query(on: db)
+        guard let token = try await LoginSession.query(on: db)
             .filter(\.$createdAt < ttl)
-            .filter(\.$token == id)
-            .with(\.$user)
+            .filter(\.$sessionKey == sessionUUID)
             .first()
         else {
             return nil
         }
 
         // Load the user's userData manually (if needed)
+        try await token.$user.load(on: db)
         try await token.user.$userData.load(on: db)
 
-        return token.user
+        return token.$user.value
     }
 }

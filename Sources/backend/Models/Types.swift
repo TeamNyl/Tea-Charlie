@@ -20,3 +20,9 @@ enum UserStatus: String, Codable {
     case banned
     case down
 }
+
+enum RoomStatus: String, Codable {
+    case active
+    case inactive
+    case archived
+}

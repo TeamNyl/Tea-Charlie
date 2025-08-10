@@ -34,8 +34,10 @@ Tea Charlie is a Swift Vapor web application backend that provides a RESTful API
 
 The application uses three main tables:
 - `users` - User accounts with email, password hash, username
-- `tokens` - Session management tokens
-- `user_data` - Game data including coins, map position, created teas, achievements
+- `login_sessions` - Session management tokens
+- `user_data` - Game data including achievements
+- `rooms` Game room configuration for multiplayer sessions, including creator, room ID, room name, etc.
+- `user_status` - Per-room user status, including referenced user ID, room ID, coins, position, etc.
 
 ## Development Commands
 

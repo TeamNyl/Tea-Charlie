@@ -9,7 +9,7 @@
 import Vapor
 import Fluent
 
-final class UserStatus: Model, Content {
+final class UserGameStatus: Model, Content, @unchecked Sendable {
     static let schema = "user_status"
 
     // Fields

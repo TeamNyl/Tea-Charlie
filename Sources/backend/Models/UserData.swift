@@ -15,7 +15,7 @@ struct Achievement: Content {
 }
 
 
-final class UserData: Model, Content {
+final class UserData: Model, Content, @unchecked Sendable {
     static let schema = "user_data"
 
     // Fields

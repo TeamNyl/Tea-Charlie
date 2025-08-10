@@ -9,7 +9,7 @@
 import Vapor
 import Fluent
 
-final class LoginSession: Model, Content {
+final class LoginSession: Model, Content, @unchecked Sendable {
     static let schema = "login_sessions"
 
     // Fields

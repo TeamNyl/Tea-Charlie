@@ -9,7 +9,7 @@
 import Vapor
 import Fluent
 
-final class User: Model, Content {
+final class User: Model, Content, @unchecked Sendable {
     static let schema = "users"
 
     // Fields
@@ -22,7 +22,7 @@ final class User: Model, Content {
     @Field(key: "username")
     var username: String
 
-    @Field(key: "pass_hash")
+    @Field(key: "pass_hask")
     var passHash: String
 
     @Enum(key: "user_role")
@@ -37,9 +37,12 @@ final class User: Model, Content {
     @Field(key: "avatar_url")
     var avatarUrl: String?
 
+    @OptionalChild(for: \.$user)
+    var userData: UserData?
+
     init() {}
 
-    init(id: UUID? = nil, email: String, username: String, passHash: String, userRole: UserRole, userStatus: UserStatus, createdAt: Date = Date(), avatarUrl: String? = nil) {
+    init(id: UUID? = nil, email: String, username: String, passHash: String, userRole: UserRole = .user, userStatus: UserStatus = .ok, createdAt: Date = Date(), avatarUrl: String? = nil) {
         self.id = id
         self.email = email
         self.username = username

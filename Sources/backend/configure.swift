@@ -24,12 +24,17 @@ public func configure(_ app: Application) async throws {
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
 
-    app.migrations.add(CreateUsers())
+    app.migrations.add(CreateUser())
+    app.migrations.add(CreateLoginSession())
+    app.migrations.add(CreateUserData())
+    app.migrations.add(CreateRoom())
+    app.migrations.add(CreateUserStatus())
 
     let corsConfig = CORSMiddleware.Configuration(
-        allowedOrigin: .all,
+        allowedOrigin: .any(["http://localhost:5173"]),
         allowedMethods: [.GET, .POST, .DELETE, .OPTIONS, .PUT],
-        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent]
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .cookie, .accessControlAllowOrigin, .accessControlAllowCredentials, .accessControlAllowHeaders, .accessControlAllowMethods],
+        allowCredentials: true
     )
 
     // MARK: Middlewares

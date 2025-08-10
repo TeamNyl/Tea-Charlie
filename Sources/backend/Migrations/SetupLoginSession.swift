@@ -10,7 +10,7 @@ import Vapor
 import Fluent
 
 struct CreateLoginSession: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+    func prepare(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("login_sessions")
             .id()
             .field("user_id", .uuid, .required)
@@ -23,7 +23,7 @@ struct CreateLoginSession: Migration {
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    func revert(on database: any Database) -> EventLoopFuture<Void> {
         return database.schema("login_sessions").delete()
     }
 }
