@@ -8,38 +8,48 @@
 
 import Vapor
 import Fluent
-import Foundation
 
-final class User: Model, @unchecked Sendable {
+final class User: Model, Content, @unchecked Sendable {
     static let schema = "users"
 
+    // Fields
     @ID(key: .id)
     var id: UUID?
 
     @Field(key: "email")
     var email: String
 
-    @Field(key: "pass_hash")
+    @Field(key: "username")
+    var username: String
+
+    @Field(key: "pass_hask")
     var passHash: String
 
-    @Field(key: "username")
-    var username: String?
+    @Enum(key: "user_role")
+    var userRole: UserRole
 
-    @Timestamp(key: "created_at", on: .create)
-    var createdAt: Date?
+    @Enum(key: "user_status")
+    var userStatus: UserStatus
 
-    @Children(for: \.$user)
-    var tokens: [Token]
+    @Field(key: "created_at")
+    var createdAt: Date
+
+    @Field(key: "avatar_url")
+    var avatarUrl: String?
 
     @OptionalChild(for: \.$user)
     var userData: UserData?
 
     init() {}
 
-    init(id: UUID? = nil, email: String, passHash: String, username: String? = nil) {
+    init(id: UUID? = nil, email: String, username: String, passHash: String, userRole: UserRole = .user, userStatus: UserStatus = .ok, createdAt: Date = Date(), avatarUrl: String? = nil) {
         self.id = id
         self.email = email
-        self.passHash = passHash
         self.username = username
+        self.passHash = passHash
+        self.userRole = userRole
+        self.userStatus = userStatus
+        self.createdAt = createdAt
+        self.avatarUrl = avatarUrl
     }
 }

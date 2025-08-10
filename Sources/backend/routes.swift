@@ -19,6 +19,6 @@ func routes(_ app: Application) throws {
     }
 
     try app.register(collection: UsersController())
-    try app.register(collection: UserInfoUpdateController())
     try app.register(collection: StatisticsRoutes())
+    try app.register(collection: UserInfoController())
 }

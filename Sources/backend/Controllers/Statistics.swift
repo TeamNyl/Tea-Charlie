@@ -18,7 +18,7 @@ struct StatisticsRoutes: RouteCollection {
             let userCount = try await User.query(on: req.db).count()
             let ttlTime = Double(SecretsManager.get(.loginTokenTTL)!)!
             let ttl = Date().addingTimeInterval(-ttlTime * 24 * 60 * 60)
-            let tokenCount = try await Token.query(on: req.db)
+            let tokenCount = try await LoginSession.query(on: req.db)
                 .filter(\.$createdAt > ttl)
                 .count()
 
