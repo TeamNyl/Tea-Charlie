@@ -16,6 +16,7 @@ let package = Package(
         // 🔵 Non-blocking, event-driven networking for Swift. Used for custom executors
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
         .package(url: "https://github.com/thebarndog/swift-dotenv.git", from: "2.0.0"),
+        .package(url: "https://github.com/vapor/leaf.git", from: "4.4.0"),
     ],
     targets: [
         .executableTarget(
@@ -26,7 +27,8 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
-                .product(name: "SwiftDotenv", package: "swift-dotenv")
+                .product(name: "SwiftDotenv", package: "swift-dotenv"),
+                .product(name: "Leaf", package: "leaf"),
             ],
             swiftSettings: swiftSettings
         )

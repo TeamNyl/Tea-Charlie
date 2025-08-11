@@ -10,6 +10,7 @@ import NIOSSL
 import Fluent
 import FluentPostgresDriver
 import Vapor
+import Leaf
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -38,7 +39,11 @@ public func configure(_ app: Application) async throws {
     )
 
     // MARK: Middlewares
-    app.middleware.use(CORSMiddleware(configuration: corsConfig))
+    app.middleware.use(CORSMiddleware(configuration: corsConfig), at: .beginning)
+
+    // Register leaf
+    app.views.use(.leaf)
+
     // register routes
     try routes(app)
 }
